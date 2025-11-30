@@ -1,0 +1,333 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Borne {
+  id                  Int                  @id @default(autoincrement())
+  nom                 String               @unique
+  productionLines     ProductionLine[]
+  taskTemplates       TaskTemplate[]
+  kits                Kit[]                @relation("BorneKits")
+  pieces              Piece[]              @relation("BornePieces")
+  sousAssemblages     SousAssemblage[]     @relation("BorneSousAssemblages")
+  sousSousAssemblages SousSousAssemblage[] @relation("BorneSousSousAssemblages")
+}
+
+model User {
+  id            Int                 @id @default(autoincrement())
+  email         String              @unique
+  password      String
+  role          Role                @default(DEFAULT)
+  nom           String?
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+  assignedTasks ProductionTask[]    @relation("UserAssignedTasks")
+  taskLogs      ProductionTaskLog[] @relation("UserTaskLogs")
+  stockLogs     StockLog[]          @relation("UserStockLogs")
+  templateLogs  TaskTemplateLog[]   @relation("UserTemplateLogs")
+}
+
+model Piece {
+  id                  Int                       @id @default(autoincrement())
+  nom                 String
+  reference           String                    @unique
+  nombre              Int                       @default(0)
+  photo               String?
+  emplacement         String
+  createdAt           DateTime                  @default(now())
+  updatedAt           DateTime                  @updatedAt
+  archived            Boolean                   @default(false)
+  seuilAlerte         Int                       @default(0)
+  etat                PieceEtat                 @default(PRODUCTION)
+  numero              String?
+  type                PieceType                 @default(COMMERCE)
+  version             String                    @default("A")
+  kits                KitPiece[]
+  sousAssemblages     SousAssemblagePiece[]
+  sousSousAssemblages SousSousAssemblagePiece[]
+  taskTemplatePieces  TaskTemplatePiece[]
+  bornes              Borne[]                   @relation("BornePieces")
+}
+
+model SousAssemblage {
+  id                          Int                                @id @default(autoincrement())
+  nom                         String
+  reference                   String                             @unique
+  photo                       String?
+  emplacement                 String
+  createdAt                   DateTime                           @default(now())
+  updatedAt                   DateTime                           @updatedAt
+  archived                    Boolean                            @default(false)
+  nombre                      Int                                @default(0)
+  seuilAlerte                 Int                                @default(0)
+  etat                        PieceEtat                          @default(PRODUCTION)
+  numero                      String?
+  type                        PieceType                          @default(COMMERCE)
+  version                     String                             @default("A")
+  pieces                      SousAssemblagePiece[]
+  sousSousAssemblages         SousAssemblageSousSousAssemblage[]
+  taskTemplateSousAssemblages TaskTemplateSousAssemblage[]
+  bornes                      Borne[]                            @relation("BorneSousAssemblages")
+}
+
+model SousSousAssemblage {
+  id                              Int                                @id @default(autoincrement())
+  nom                             String
+  reference                       String                             @unique
+  photo                           String?
+  emplacement                     String
+  createdAt                       DateTime                           @default(now())
+  updatedAt                       DateTime                           @updatedAt
+  archived                        Boolean                            @default(false)
+  nombre                          Int                                @default(0)
+  seuilAlerte                     Int                                @default(0)
+  etat                            PieceEtat                          @default(PRODUCTION)
+  numero                          String?
+  type                            PieceType                          @default(COMMERCE)
+  version                         String                             @default("A")
+  sousAssemblages                 SousAssemblageSousSousAssemblage[]
+  pieces                          SousSousAssemblagePiece[]
+  taskTemplateSousSousAssemblages TaskTemplateSousSousAssemblage[]
+  bornes                          Borne[]                            @relation("BorneSousSousAssemblages")
+}
+
+model Kit {
+  id          Int        @id @default(autoincrement())
+  nom         String
+  reference   String     @unique
+  photo       String?
+  emplacement String
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  archived    Boolean    @default(false)
+  nombre      Int        @default(0)
+  seuilAlerte Int        @default(0)
+  etat        PieceEtat  @default(PRODUCTION)
+  numero      String?
+  type        PieceType  @default(COMMERCE)
+  version     String     @default("A")
+  pieces      KitPiece[]
+  bornes      Borne[]    @relation("BorneKits")
+}
+
+model SousAssemblagePiece {
+  id               Int            @id @default(autoincrement())
+  sousAssemblageId Int
+  pieceId          Int
+  nombre           Int            @default(1)
+  piece            Piece          @relation(fields: [pieceId], references: [id])
+  sousAssemblage   SousAssemblage @relation(fields: [sousAssemblageId], references: [id])
+
+  @@unique([sousAssemblageId, pieceId])
+}
+
+model SousSousAssemblagePiece {
+  id                   Int                @id @default(autoincrement())
+  sousSousAssemblageId Int
+  pieceId              Int
+  nombre               Int                @default(1)
+  piece                Piece              @relation(fields: [pieceId], references: [id])
+  sousSousAssemblage   SousSousAssemblage @relation(fields: [sousSousAssemblageId], references: [id])
+
+  @@unique([sousSousAssemblageId, pieceId])
+}
+
+model SousAssemblageSousSousAssemblage {
+  id                   Int                @id @default(autoincrement())
+  sousAssemblageId     Int
+  sousSousAssemblageId Int
+  nombre               Int                @default(1)
+  sousAssemblage       SousAssemblage     @relation(fields: [sousAssemblageId], references: [id])
+  sousSousAssemblage   SousSousAssemblage @relation(fields: [sousSousAssemblageId], references: [id])
+
+  @@unique([sousAssemblageId, sousSousAssemblageId])
+}
+
+model KitPiece {
+  id      Int   @id @default(autoincrement())
+  kitId   Int
+  pieceId Int
+  nombre  Int   @default(1)
+  kit     Kit   @relation(fields: [kitId], references: [id])
+  piece   Piece @relation(fields: [pieceId], references: [id])
+
+  @@unique([kitId, pieceId])
+}
+
+model StockLog {
+  id        Int            @id @default(autoincrement())
+  type      String
+  itemId    Int
+  quantity  Int
+  operation StockOperation
+  createdAt DateTime       @default(now())
+  userId    Int?
+  user      User?          @relation("UserStockLogs", fields: [userId], references: [id])
+}
+
+model TaskTemplate {
+  id                      Int                              @id @default(autoincrement())
+  borneId                 Int?
+  label                   String
+  description             String?
+  order                   Int?
+  estimatedMinutesPerUnit Int?
+  active                  Boolean                          @default(true)
+  productionTasks         ProductionTask[]
+  borne                   Borne?                           @relation(fields: [borneId], references: [id])
+  logs                    TaskTemplateLog[]
+  pieces                  TaskTemplatePiece[]
+  sousAssemblages         TaskTemplateSousAssemblage[]
+  sousSousAssemblages     TaskTemplateSousSousAssemblage[]
+}
+
+model Production {
+  id          Int              @id @default(autoincrement())
+  nom         String
+  reference   String?          @unique
+  description String?
+  status      ProductionStatus @default(PLANNED)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  dueDate     DateTime?
+  lines       ProductionLine[]
+  tasks       ProductionTask[]
+}
+
+model ProductionLine {
+  id           Int        @id @default(autoincrement())
+  productionId Int
+  borneId      Int
+  quantity     Int
+  borne        Borne      @relation(fields: [borneId], references: [id])
+  production   Production @relation(fields: [productionId], references: [id])
+}
+
+model ProductionTask {
+  id             Int                 @id @default(autoincrement())
+  productionId   Int
+  taskTemplateId Int?
+  label          String
+  description    String?
+  isDone         Boolean             @default(false)
+  totalSeconds   Int                 @default(0)
+  running        Boolean             @default(false)
+  lastStartedAt  DateTime?
+  assignedToId   Int?
+  assignedTo     User?               @relation("UserAssignedTasks", fields: [assignedToId], references: [id])
+  production     Production          @relation(fields: [productionId], references: [id])
+  template       TaskTemplate?       @relation(fields: [taskTemplateId], references: [id])
+  logs           ProductionTaskLog[]
+
+  @@index([assignedToId])
+}
+
+model ProductionTaskLog {
+  id               Int            @id @default(autoincrement())
+  productionTaskId Int
+  userId           Int?
+  eventType        TaskEventType
+  createdAt        DateTime       @default(now())
+  note             String?
+  productionTask   ProductionTask @relation(fields: [productionTaskId], references: [id])
+  user             User?          @relation("UserTaskLogs", fields: [userId], references: [id])
+
+  @@index([productionTaskId, createdAt])
+}
+
+model TaskTemplatePiece {
+  id             Int          @id @default(autoincrement())
+  taskTemplateId Int
+  pieceId        Int
+  quantity       Int          @default(1)
+  piece          Piece        @relation(fields: [pieceId], references: [id])
+  taskTemplate   TaskTemplate @relation(fields: [taskTemplateId], references: [id])
+
+  @@unique([taskTemplateId, pieceId])
+}
+
+model TaskTemplateSousAssemblage {
+  id               Int            @id @default(autoincrement())
+  taskTemplateId   Int
+  sousAssemblageId Int
+  quantity         Int            @default(1)
+  sousAssemblage   SousAssemblage @relation(fields: [sousAssemblageId], references: [id])
+  taskTemplate     TaskTemplate   @relation(fields: [taskTemplateId], references: [id])
+
+  @@unique([taskTemplateId, sousAssemblageId])
+}
+
+model TaskTemplateSousSousAssemblage {
+  id                   Int                @id @default(autoincrement())
+  taskTemplateId       Int
+  sousSousAssemblageId Int
+  quantity             Int                @default(1)
+  sousSousAssemblage   SousSousAssemblage @relation(fields: [sousSousAssemblageId], references: [id])
+  taskTemplate         TaskTemplate       @relation(fields: [taskTemplateId], references: [id])
+
+  @@unique([taskTemplateId, sousSousAssemblageId])
+}
+
+model TaskTemplateLog {
+  id             Int           @id @default(autoincrement())
+  taskTemplateId Int
+  userId         Int?
+  createdAt      DateTime      @default(now())
+  note           String?
+  eventType      TaskEventType
+  taskTemplate   TaskTemplate  @relation(fields: [taskTemplateId], references: [id])
+  user           User?         @relation("UserTemplateLogs", fields: [userId], references: [id])
+
+  @@index([taskTemplateId, createdAt])
+}
+
+enum TaskEventType {
+  CREATED
+  ASSIGNED
+  STARTED
+  PAUSED
+  COMPLETED
+  REOPENED
+}
+
+enum ProductionStatus {
+  PLANNED
+  IN_PROGRESS
+  DONE
+  CANCELED
+}
+
+enum Role {
+  ADMIN
+  USER
+  DEFAULT
+}
+
+enum StockOperation {
+  ADD
+  REMOVE
+}
+
+enum PieceType {
+  COMMERCE
+  ELEC
+  PIECE_3D
+  CABLE_SM
+  TOLERIE
+  OUTIL
+  SSA
+  SA
+  KITS
+}
+
+enum PieceEtat {
+  RD
+  PRODUCTION
+  MAINTENANCE
+}

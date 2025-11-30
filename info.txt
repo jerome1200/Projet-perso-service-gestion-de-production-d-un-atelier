@@ -1,0 +1,42 @@
+Run le server
+
+npm run start:dev
+
+Service	Rôle							Port
+backend	Ton app NestJS					3000
+db	PostgreSQL							5432
+prisma-studio	Interface web Prisma	5555
+
+
+➜  frontend
+➜  npm run dev
+
+
+➜  Backend / Thekeepers
+➜  docker compose -p stock up --build
+
+
+!!!importation depuis le CSV (EN attente d'un CSV clean)
+
+Ajout d'un visuel pour voir les retrait/tâche par user dans admin (graphique général & vue par user)
+Ajout d'un visuel des attributiuon des tâche par prod
+
+Créer une page unique USER pour voir les tâche qu'ils ont à effectuer
+
+Ajout d'un bouton inventaire sur la page du QR code pour réintialisé les valeurs dans la DB
+
+modifier affichage tache non typé le derniere historique pas plus
+Rajouter un moyen de mettre le temps d'une tâche à la main & mettre en pause automatiquement a 13h55 heure paris
+
+
+
+
+
+commande BDD
+
+npx prisma migrate reset (reset toute la BDD)
+
+
+suppression dans le CSV
+C10044A_roulette porte avant,C10044A_roulette porte avant,Obsolète,Suivi,Commerce,10044,A,roulette porte avant,,,1,,,,,,,,SA1,1
+P140_Support Barre Fil,P140_Support Barre Fil,Obsolète,Unité,Tolerie,140,A,Support Barre Fil,,,1,,,,,,,,SA4,1

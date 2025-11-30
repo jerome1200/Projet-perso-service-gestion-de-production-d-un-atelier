@@ -1,0 +1,67 @@
+
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    image: stock_backend
+    container_name: stock_backend
+    ports:
+      - "3000:3000"
+    command: ["sh", "-c", "npx prisma generate && exec npm run start:dev"]
+    environment:
+      DATABASE_URL: "postgresql://postgres:postgres@db:5432/stock_db?schema=public"
+    depends_on:
+      - db
+    volumes:
+      - ./backend/src:/app/src
+      - ./backend/prisma:/app/prisma
+      - ./backend/.env:/app/.env
+      - ./backend/node_modules:/app/node_modules
+
+
+  db:
+    image: postgres:16
+    container_name: stock_db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: stock_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  prisma-studio:
+    image: node:20
+    container_name: stock_prisma_studio
+    working_dir: /app
+    command: >
+      sh -c "
+      npm install prisma @prisma/client &&
+      until npx prisma db pull; do
+        echo '⏳ Waiting for database...';
+        sleep 3;
+      done &&
+      npx prisma generate &&
+      npx prisma studio --schema=prisma/schema.prisma
+      "
+    ports:
+      - "5555:5555"
+    environment:
+      DATABASE_URL: "postgresql://postgres:postgres@db:5432/stock_db?schema=public"
+    volumes:
+      - ./backend/prisma:/app/prisma
+    depends_on:
+      db:
+        condition: service_healthy
+
+
+volumes:
+  db_data:
